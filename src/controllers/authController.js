@@ -18,4 +18,13 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login };
+const getMe = async (req, res, next) => {
+  try {
+    const user = await authService.getMe(req.user.id);
+    res.json(user);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, getMe };
