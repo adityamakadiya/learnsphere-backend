@@ -5,6 +5,9 @@ const { jwtSecret } = require('../config/index');
 
 const register = async ({ email, password, role }) => {
   const existingUser = await prisma.user.findUnique({ where: { email } });
+  const users = await prisma.user.findMany();
+  console.log(users);
+  
   if (existingUser) {
     throw new Error('Email already exists');
   }
