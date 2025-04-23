@@ -7,9 +7,9 @@ const auth = require('../middleware/auth');
 
 // All routes require instructor role
 
-// router.use(auth , restrictToInstructor);
+ router.use(auth , restrictToInstructor);
 
-router.post('/',auth,restrictToInstructor,createCourse);
+router.post('/',createCourse);
 router.get('/instructor', getInstructorCourses);
 
 

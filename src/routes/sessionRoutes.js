@@ -3,9 +3,10 @@ const router = express.Router();
 const restrictToInstructor = require('../middleware/restrictToInstructor');
 const ownCourse = require('../middleware/ownCourse');
 const { createSession, getSession, updateSession, deleteSession } = require('../controllers/sessionController');
+const auth = require('../middleware/auth');
 
 // All routes require instructor role
-router.use(restrictToInstructor);
+router.use(auth , restrictToInstructor);
 
 // Session creation (requires course ownership)
 router.post('/courses/:courseId/sessions', ownCourse, createSession);

@@ -10,6 +10,7 @@ const createCourse = async(userId, courseData) => {
       instructorId: userId,
     }
   });
+  return course;
 };
 
 const getInstructorCourses = async (userId) => {
