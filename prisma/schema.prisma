@@ -9,63 +9,67 @@ datasource db {
 }
 
 model User {
-  id          Int         @id @default(autoincrement())
-  email       String      @unique
-  password    String
-  role        String      @default("Student") // Student, Instructor
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  courses     Course[]    @relation("InstructorCourses") // Courses taught
-  enrollments Enrollment[] // Courses enrolled
-  progress    Progress[]  // Session progress
+  id         Int         @id @default(autoincrement())
+  email      String      @unique
+  password   String
+  role       String      @default("Student") // Student, Instructor
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  courses    Course[]    @relation("InstructorCourses") // Courses taught
+  enrollments Enrollment[]
+  progress   Progress[]
+
   @@index([role])
 }
 
 model Category {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  courses     Course[]  // Courses in this category
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  courses    Course[]  // Courses in this category
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }
 
 model Course {
-  id            Int          @id @default(autoincrement())
-  title         String
-  description   String?
-  instructorId  Int
-  categoryId    Int
-  instructor    User         @relation("InstructorCourses", fields: [instructorId], references: [id])
-  category      Category     @relation(fields: [categoryId], references: [id])
-  sessions      Session[]    // Course sessions
-  enrollments   Enrollment[] // Students enrolled
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id           Int         @id @default(autoincrement())
+  title        String
+  description  String?
+  instructorId Int
+  instructor   User        @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
+  categoryId   Int
+  category     Category    @relation(fields: [categoryId], references: [id])
+  sessions     Session[]   // Course sessions
+  enrollments  Enrollment[] // Students enrolled
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
   @@index([instructorId])
   @@index([categoryId])
 }
 
 model Session {
-  id            Int       @id @default(autoincrement())
-  courseId      Int
-  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title         String
-  youtubeUrl    String?   // YouTube video link
-  content       Json?     // TipTap rich text (JSON)
-  order         Int       // Session order
-  progress      Progress[] // Student progress
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id         Int       @id @default(autoincrement())
+  courseId   Int
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title      String
+  youtubeUrl String?   // YouTube video link
+  content    Json?     // TipTap rich text (JSON)
+  order      Int       // Session order
+  progress   Progress[] // Student progress
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
   @@index([courseId])
 }
 
 model Enrollment {
-  id          Int       @id @default(autoincrement())
-  userId      Int
-  courseId    Int
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  enrolledAt  DateTime  @default(now())
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  courseId   Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime  @default(now())
+
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
@@ -81,6 +85,7 @@ model Progress {
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
   @@unique([userId, sessionId])
   @@index([userId])
   @@index([sessionId])
