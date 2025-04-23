@@ -51,10 +51,17 @@ const deleteCourse = async (courseId) => {
   });
 };
 
+const getCategories = async () => {
+  return prisma.category.findMany({
+    select: { id: true, name: true },
+  });
+};
+
 module.exports = {
   createCourse,
   getInstructorCourses,
   getCourse,
   updateCourse,
   deleteCourse,
+  getCategories,
 };

@@ -2,20 +2,20 @@ const express = require('express');
 const router = express.Router();
 const restrictToInstructor = require('../middleware/restrictToInstructor');
 const ownCourse = require('../middleware/ownCourse');
-const { createCourse, getInstructorCourses, getCourse, updateCourse, deleteCourse } = require('../controllers/courseController');
+const { createCourse, getInstructorCourses, getCourse, updateCourse, deleteCourse, getCategories } = require('../controllers/courseController');
 const auth = require('../middleware/auth');
 
 // All routes require instructor role
 
- router.use(auth , restrictToInstructor);
+router.post('/',auth,restrictToInstructor,createCourse);
+router.get('/instructor',auth , restrictToInstructor, getInstructorCourses);
 
-router.post('/',createCourse);
-router.get('/instructor', getInstructorCourses);
+router.get('/category',auth, getCategories);
 
 
-router.use('/:id', ownCourse);
-router.get('/:id', getCourse);
-router.put('/:id', updateCourse);
-router.delete('/:id', deleteCourse);
+router.use('/:id',auth , restrictToInstructor, ownCourse);
+router.get('/:id',auth , restrictToInstructor, getCourse);
+router.put('/:id',auth , restrictToInstructor, updateCourse);
+router.delete('/:id',auth , restrictToInstructor, deleteCourse);
 
 module.exports = router;

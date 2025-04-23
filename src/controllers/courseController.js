@@ -50,10 +50,21 @@ const deleteCourse = async (req, res) => {
   }
 };
 
+const getCategories = async (req, res) => {
+  try {
+    const categories = await courseService.getCategories();
+    res.status(200).json({ data: categories });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 module.exports = {
   createCourse,
   getInstructorCourses,
   getCourse,
   updateCourse,
   deleteCourse,
+  getCategories
 };
