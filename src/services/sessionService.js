@@ -13,9 +13,14 @@ const createSession = async (courseId, sessionData) => {
   });
 };
 
-const getSession = async (sessionId) => {
-  return prisma.session.findUnique({
-    where: { id: sessionId },
+const getSession = async (courseId) => {
+  return prisma.session.findMany({
+    where: {
+      courseId: courseId,
+    },
+    orderBy: {
+      order: 'asc', // Optional: sort sessions by their order
+    },
   });
 };
 

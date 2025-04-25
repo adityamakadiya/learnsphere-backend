@@ -11,11 +11,17 @@ const createSession = async (req, res) => {
 
 const getSession = async (req, res) => {
   try {
-    const session  = await sessionService.getSession(parseInt(req.params.id));
-    if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+    // console.log(req.params.id);
+    
+    const courseId = parseInt(req.params.id); // Make sure this exists and is parsed
+    // console.log(courseId);
+    
+    if (isNaN(courseId)) {
+      return res.status(400).json({ error: 'Invalid courseId' });
     }
-    res.status(200).json({ data: session });
+
+    const sessions = await sessionService.getSession(courseId);
+    res.status(200).json({ data: sessions });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
