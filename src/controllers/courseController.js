@@ -59,6 +59,15 @@ const getCategories = async (req, res) => {
   }
 };
 
+const getAllCourses = async (req, res) => {
+  try {
+    const courses = await courseService.getAllCourses();
+    res.status(200).json({ data: courses });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 
 module.exports = {
   createCourse,
@@ -66,5 +75,6 @@ module.exports = {
   getCourse,
   updateCourse,
   deleteCourse,
-  getCategories
+  getCategories,
+  getAllCourses
 };

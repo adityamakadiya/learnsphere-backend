@@ -57,6 +57,15 @@ const getCategories = async () => {
   });
 };
 
+const getAllCourses = async () => {
+  return prisma.course.findMany({
+    include: {
+      category: { select: { name: true } },
+      sessions: { select: { id: true, title: true } },
+    },
+  });
+};
+
 module.exports = {
   createCourse,
   getInstructorCourses,
@@ -64,4 +73,5 @@ module.exports = {
   updateCourse,
   deleteCourse,
   getCategories,
+  getAllCourses
 };
