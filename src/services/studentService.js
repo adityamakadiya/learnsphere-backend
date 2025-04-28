@@ -111,6 +111,33 @@ const markSessionComplete = async (userId, sessionId) => {
   });
 };
 
+const getCourseProgress = async (userId, courseId) => {
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId: parseInt(courseId) } },
+  });
+  if (!enrollment) {
+    throw new Error('Not enrolled in this course');
+  }
+  const sessions = await prisma.session.findMany({
+    where: { courseId: parseInt(courseId) },
+    select: { id: true },
+  });
+  const sessionIds = sessions.map((s) => s.id);
+  const progress = await prisma.progress.findMany({
+    where: {
+      userId,
+      sessionId: { in: sessionIds },
+      completed: true,
+    },
+    select: {
+      sessionId: true,
+      completed: true,
+      completedAt: true,
+    },
+  });
+  return progress;
+};
+
 const getStudentDashboard = async (userId) => {
   const enrollments = await prisma.enrollment.findMany({
     where: { userId },
@@ -154,5 +181,6 @@ module.exports = {
   getEnrolledCourses,
   getCourseSessions,
   markSessionComplete,
+  getCourseProgress,
   getStudentDashboard,
 };

@@ -7,7 +7,9 @@ const {
   getCourseSessions,
   markSessionComplete,
   getStudentDashboard,
+  getCourseProgress,
 } = require('../controllers/studentController');
+
 const auth = require('../middleware/auth');
 const restrictToStudent = require('../middleware/restrictToStudent');
 
@@ -19,6 +21,7 @@ router.post('/courses/:courseId/enroll', enrollCourse);
 router.get('/enrollments', getEnrolledCourses);
 router.get('/courses/:courseId/sessions', getCourseSessions);
 router.post('/sessions/:sessionId/complete', markSessionComplete);
+router.get('/courses/:courseId/progress', getCourseProgress);
 router.get('/dashboard', getStudentDashboard);
 
 module.exports = router;

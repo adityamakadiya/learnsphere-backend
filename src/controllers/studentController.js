@@ -59,6 +59,18 @@ const markSessionComplete = async (req, res) => {
   }
 };
 
+const getCourseProgress = async (req, res) => {
+  try {
+    const progress = await studentService.getCourseProgress(req.user.id, req.params.courseId);
+    res.status(200).json({ data: progress });
+  } catch (error) {
+    if (error.message === 'Not enrolled in this course') {
+      return res.status(403).json({ error: error.message });
+    }
+    res.status(500).json({ error: error.message });
+  }
+};
+
 const getStudentDashboard = async (req, res) => {
   try {
     const dashboard = await studentService.getStudentDashboard(req.user.id);
@@ -74,5 +86,6 @@ module.exports = {
   getEnrolledCourses,
   getCourseSessions,
   markSessionComplete,
+  getCourseProgress,
   getStudentDashboard,
 };
