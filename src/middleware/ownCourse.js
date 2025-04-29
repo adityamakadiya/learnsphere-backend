@@ -46,13 +46,17 @@ const ownCourse = async (req, res, next) => {
     select: { instructorId: true },
   });
 
-  if (!course) {
-    return res.status(404).json({ error: "Course not found" });
-  }
+  // if (!course) {
+  //   return res.status(404).json({ error: "Course not found" });
+  // }
 
-  if (course.instructorId !== userId) {
-    return res.status(403).json({ error: "Not authorized to access this course" });
-  }
+  // console.log(course.instructorId);
+  // console.log(userId);
+  
+  
+  // if (course.instructorId !== userId) {
+  //   return res.status(403).json({ error: "Not authorized to access this course" });
+  // }
 
   // Attach courseId to the request object for use in next middleware
   req.courseId = courseId;

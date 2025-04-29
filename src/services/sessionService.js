@@ -24,6 +24,19 @@ const getSession = async (courseId) => {
   });
 };
 
+const getSessionbyId = async (sessionId) => {
+  return prisma.session.findUnique({
+    where: { id: sessionId },
+    select: {
+      id: true,
+      title: true,
+      youtubeUrl: true,
+      content: true,
+      courseId: true,
+    },
+  });
+};
+
 const updateSession = async (sessionId, sessionData) => {
   return prisma.session.update({
     where: { id: sessionId },
@@ -31,7 +44,6 @@ const updateSession = async (sessionId, sessionData) => {
       title: sessionData.title,
       youtubeUrl: sessionData.youtubeUrl,
       content: sessionData.content,
-      order: sessionData.order,
     },
   });
 };
@@ -45,6 +57,7 @@ const deleteSession = async (sessionId) => {
 module.exports = {
   createSession,
   getSession,
+  getSessionbyId,
   updateSession,
   deleteSession,
 };

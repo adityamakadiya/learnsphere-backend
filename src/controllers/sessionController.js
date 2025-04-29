@@ -21,8 +21,29 @@ const getSession = async (req, res) => {
     }
 
     const sessions = await sessionService.getSession(courseId);
+    // console.log(sessions);
+    
     res.status(200).json({ data: sessions });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getSessionbyId = async (req, res) => {
+  try {
+    console.log(req.params.id);
+    
+    const session = await sessionService.getSessionbyId(parseInt(req.params.id));
+
+    // console.log(req.params.id);
+
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.status(200).json({ data: session });
+  } catch (error) {
+    console.error(`getSessionbyId: Error - ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 };
@@ -48,6 +69,7 @@ const deleteSession = async (req, res) => {
 module.exports = {
   createSession,
   getSession,
+  getSessionbyId,
   updateSession,
   deleteSession,
 };
