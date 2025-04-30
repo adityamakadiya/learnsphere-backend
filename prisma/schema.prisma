@@ -9,15 +9,16 @@ datasource db {
 }
 
 model User {
-  id         Int         @id @default(autoincrement())
-  email      String      @unique
-  password   String
-  role       String      @default("Student") // Student, Instructor
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  courses    Course[]    @relation("InstructorCourses") // Courses taught
-  enrollments Enrollment[]
-  progress   Progress[]
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  role         String        @default("Student") // Student, Instructor
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  courses      Course[]      @relation("InstructorCourses") // Courses taught
+  enrollments  Enrollment[]
+  progress     Progress[]
+  refreshTokens RefreshToken[] // Add relation for refresh tokens
 
   @@index([role])
 }
@@ -54,7 +55,6 @@ model Session {
   title      String
   youtubeUrl String?   // YouTube video link
   content    Json?     // TipTap rich text (JSON)
-  order      Int       // Session order
   progress   Progress[] // Student progress
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -89,4 +89,16 @@ model Progress {
   @@unique([userId, sessionId])
   @@index([userId])
   @@index([sessionId])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([token])
 }
