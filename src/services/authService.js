@@ -5,16 +5,16 @@ const { jwtSecret, refreshTokenSecret } = require('../config/index');
 
 const register = async ({ email, password, role }) => {
   const existingUser = await prisma.user.findUnique({ where: { email } });
-  const users = await prisma.user.findMany();
-  console.log(users);
-  
   if (existingUser) {
-    throw new Error('Email already exists');
+    const error = new Error('Email already exists');
+    error.status = 400;
+    throw error;
   }
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: { email, password: hashedPassword, role: role || 'Student' },
   });
+  console.log('authService/register: Created user:', user.id); // Debug
   return { id: user.id, email: user.email, role: user.role };
 };
 
@@ -35,17 +35,21 @@ const login = async ({ email, password }) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role, email: user.email },
     jwtSecret,
-    { expiresIn: '15m' }
+    { expiresIn: '20m' }
   );
-  const refreshToken = jwt.sign({}, refreshTokenSecret, { expiresIn: '7d' });
+  const refreshToken = jwt.sign(
+    { id: user.id }, // Include userId
+    refreshTokenSecret,
+    { expiresIn: '7d' }
+  );
   await prisma.refreshToken.create({
     data: {
       token: refreshToken,
       userId: user.id,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   });
-
+  console.log('authService/login: Generated tokens for user:', user.id); // Debug
   return {
     accessToken,
     refreshToken,
@@ -62,8 +66,9 @@ const refresh = async (refreshToken) => {
     error.status = 401;
     throw error;
   }
+  let decoded;
   try {
-    jwt.verify(refreshToken, refreshTokenSecret);
+    decoded = jwt.verify(refreshToken, refreshTokenSecret);
   } catch (error) {
     const err = new Error('Invalid refresh token');
     err.status = 401;
@@ -72,8 +77,8 @@ const refresh = async (refreshToken) => {
   const user = await prisma.user.findUnique({
     where: { id: storedToken.userId },
   });
-  if (!user) {
-    const error = new Error('User not found');
+  if (!user || user.id !== decoded.id) {
+    const error = new Error('User not found or invalid token');
     error.status = 401;
     throw error;
   }
@@ -82,9 +87,9 @@ const refresh = async (refreshToken) => {
     jwtSecret,
     { expiresIn: '20m' }
   );
+  console.log('authService/refresh: Refreshed accessToken for user:', user.id); // Debug
   return {
     accessToken,
-    refreshToken, // Reuse existing refresh token
     user: { id: user.id, email: user.email, role: user.role },
   };
 };
@@ -92,6 +97,7 @@ const refresh = async (refreshToken) => {
 const logout = async (refreshToken) => {
   if (refreshToken) {
     await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
+    console.log('authService/logout: Deleted refreshToken'); // Debug
   }
 };
 
@@ -101,8 +107,11 @@ const getMe = async (userId) => {
     select: { id: true, email: true, role: true },
   });
   if (!user) {
-    throw new Error('User not found');
+    const error = new Error('User not found');
+    error.status = 404;
+    throw error;
   }
+  console.log('authService/getMe: Fetched user:', user.id); // Debug
   return user;
 };
 

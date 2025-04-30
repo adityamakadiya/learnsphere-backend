@@ -7,8 +7,7 @@ const createSession = async (courseId, sessionData) => {
       title: sessionData.title,
       youtubeUrl: sessionData.youtubeUrl,
       content: sessionData.content,
-      order: sessionData.order || 0,
-      courseId: courseId,
+      courseId: parseInt(courseId),
     },
   });
 };
@@ -16,17 +15,17 @@ const createSession = async (courseId, sessionData) => {
 const getSession = async (courseId) => {
   return prisma.session.findMany({
     where: {
-      courseId: courseId,
+      courseId: parseInt(courseId),
     },
     orderBy: {
-      order: 'asc', // Optional: sort sessions by their order
+      createdAt: 'asc',
     },
   });
 };
 
 const getSessionbyId = async (sessionId) => {
   return prisma.session.findUnique({
-    where: { id: sessionId },
+    where: { id: parseInt(sessionId) },
     select: {
       id: true,
       title: true,
@@ -39,7 +38,7 @@ const getSessionbyId = async (sessionId) => {
 
 const updateSession = async (sessionId, sessionData) => {
   return prisma.session.update({
-    where: { id: sessionId },
+    where: { id: parseInt(sessionId) },
     data: {
       title: sessionData.title,
       youtubeUrl: sessionData.youtubeUrl,
@@ -50,7 +49,7 @@ const updateSession = async (sessionId, sessionData) => {
 
 const deleteSession = async (sessionId) => {
   return prisma.session.delete({
-    where: { id: sessionId },
+    where: { id: parseInt(sessionId) },
   });
 };
 

@@ -3,7 +3,6 @@ const { authService } = require('../services/authService');
 const register = async (req, res, next) => {
   try {
     const user = await authService.register(req.body);
-    // console.log(user);
     res.status(201).json(user);
   } catch (err) {
     next(err);
@@ -11,66 +10,62 @@ const register = async (req, res, next) => {
 };
 
 const login = async (req, res, next) => {
-  // try {
-  //   const { token, user } = await authService.login(req.body);
-  //   res.json({ token, user });
-  // } catch (err) {
-  //   next(err);
-  // }
   try {
     const { accessToken, refreshToken, user } = await authService.login(req.body);
+    console.log("auth/login: Setting cookies for user:", user.id); // Debug
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       maxAge: 20 * 60 * 1000, // 20 minutes
     });
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      // secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    res.json({ accessToken, refreshToken,user });
+    res.json({ user }); // Only send user data
   } catch (err) {
+    console.error("auth/login: Error:", err.message, err.stack); // Debug
     next(err);
   }
 };
 
 const refresh = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
-  console.log('Refresh: Received refreshToken:', refreshToken); // Debug
+  console.log('auth/refresh: Received refreshToken:', !!refreshToken); // Debug
   if (!refreshToken) {
-    console.log('Refresh: No refresh token provided');
+    console.log('auth/refresh: No refresh token provided');
     return res.status(401).json({ error: 'No refresh token provided' });
   }
   try {
     const { accessToken, user } = await authService.refresh(refreshToken);
-    console.log('Refresh: New accessToken generated'); // Debug
+    console.log('auth/refresh: New accessToken generated for user:', user.id); // Debug
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       // secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
+      sameSite: 'strict',
       maxAge: 20 * 60 * 1000,
     });
     res.json({ user });
   } catch (err) {
-    console.error('Refresh Error:', err); // Debug
+    console.error('auth/refresh: Error:', err.message, err.stack); // Debug
     next(err);
   }
 };
 
 const logout = async (req, res, next) => {
   const refreshToken = req.cookies.refreshToken;
-  console.log('Logout: Received refreshToken:', refreshToken); // Debug
+  console.log('auth/logout: Received refreshToken:', !!refreshToken); // Debug
   try {
     await authService.logout(refreshToken);
-    console.log('Logout: Refresh token deleted'); // Debug
+    console.log('auth/logout: Refresh token deleted'); // Debug
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
-    console.error('Logout Error:', err); // Debug
+    console.error('auth/logout: Error:', err.message, err.stack); // Debug
     next(err);
   }
 };
@@ -78,8 +73,10 @@ const logout = async (req, res, next) => {
 const getMe = async (req, res, next) => {
   try {
     const user = await authService.getMe(req.user.id);
+    console.log('auth/me: Returning user:', user.id); // Debug
     res.json(user);
   } catch (err) {
+    console.error('auth/me: Error:', err.message, err.stack); // Debug
     next(err);
   }
 };

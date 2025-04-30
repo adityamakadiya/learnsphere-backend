@@ -50,24 +50,60 @@ const getEnrolledCourses = async (userId) => {
   });
 };
 
+// const getCourseSessions = async (userId, courseId) => {
+//   console.log('studentService.getCourseSessions: userId:', userId, 'courseId:', courseId); // Debug
+//   const enrollment = await prisma.enrollment.findFirst({
+//     where: {
+//       studentId: userId,
+//       courseId: parseInt(courseId),
+//     },
+//   });
+//   console.log('studentService.getCourseSessions: enrollment:', enrollment); // Debug
+//   if (!enrollment) {
+//     throw new Error('Not enrolled in this course');
+//   }
+//   const sessions = await prisma.session.findMany({
+//     where: { courseId: parseInt(courseId) },
+//     select: {
+//       id: true,
+//       title: true,
+//       youtubeUrl: true,
+//       content: true,
+//     },
+//     orderBy: { createdAt: 'asc' }, // Changed 'order' to 'createdAt'
+//   });
+//   console.log('studentService.getCourseSessions: sessions:', sessions); // Debug
+//   return sessions;
+// };
 const getCourseSessions = async (userId, courseId) => {
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId, courseId: parseInt(courseId) } },
-  });
-  if (!enrollment) {
-    throw new Error('Not enrolled in this course');
+  console.log('studentService.getCourseSessions: userId:', userId, 'courseId:', courseId); // Debug
+  try {
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        userId: userId, // Changed from studentId to userId
+        courseId: parseInt(courseId),
+      },
+    });
+    console.log('studentService.getCourseSessions: enrollment:', enrollment); // Debug
+    if (!enrollment) {
+      throw new Error('Not enrolled in this course');
+    }
+    const sessions = await prisma.session.findMany({
+      where: { courseId: parseInt(courseId) },
+      select: {
+        id: true,
+        title: true,
+        youtubeUrl: true,
+        content: true,
+      },
+      orderBy: { createdAt: 'asc' }, // Use createdAt or remove if sorting not needed
+    });
+    console.log('studentService.getCourseSessions: sessions:', sessions); // Debug
+    return sessions;
+  } catch (error) {
+    console.error('studentService.getCourseSessions: Error:', error.message, error.stack); // Detailed error
+    throw error;
   }
-  return prisma.session.findMany({
-    where: { courseId: parseInt(courseId) },
-    select: {
-      id: true,
-      title: true,
-      youtubeUrl: true,
-      content: true,
-      order: true,
-    },
-    orderBy: { order: 'asc' },
-  });
 };
 
 const markSessionComplete = async (userId, sessionId) => {

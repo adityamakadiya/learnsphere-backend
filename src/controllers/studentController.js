@@ -33,15 +33,31 @@ const getEnrolledCourses = async (req, res) => {
 
 const getCourseSessions = async (req, res) => {
   try {
+    console.log('studentController.getCourseSessions: userId:', req.user.id, 'courseId:', req.params.courseId); // Debug
     const sessions = await studentService.getCourseSessions(req.user.id, req.params.courseId);
     res.status(200).json({ data: sessions });
   } catch (error) {
+    console.error('studentController.getCourseSessions: Error:', error.message, error.stack); // Detailed error
     if (error.message === 'Not enrolled in this course') {
       return res.status(403).json({ error: error.message });
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch sessions' });
   }
-};
+}; 
+
+// const getCourseSessions = async (req, res) => {
+//   try {
+//     console.log('studentController.getCourseSessions: userId:', req.user.id, 'courseId:', req.params.courseId); // Debug
+//     const sessions = await studentService.getCourseSessions(req.user.id, req.params.courseId);
+//     res.status(200).json({ data: sessions });
+//   } catch (error) {
+//     console.error('studentController.getCourseSessions: Error:', error.message, error.stack); // Detailed error
+//     if (error.message === 'Not enrolled in this course') {
+//       return res.status(403).json({ error: error.message });
+//     }
+//     res.status(500).json({ error: 'Failed to fetch sessions' });
+//   }
+// };
 
 const markSessionComplete = async (req, res) => {
   try {
