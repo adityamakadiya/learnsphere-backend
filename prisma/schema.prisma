@@ -11,22 +11,37 @@ datasource db {
 model User {
   id           Int           @id @default(autoincrement())
   email        String        @unique
-  password     String
+  password     String?       // Nullable for Google OAuth users
   role         String        @default("Student") // Student, Instructor
+  googleId     String?       @unique
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  courses      Course[]      @relation("InstructorCourses") // Courses taught
+  courses      Course[]      @relation("InstructorCourses")
   enrollments  Enrollment[]
   progress     Progress[]
-  refreshTokens RefreshToken[] // Add relation for refresh tokens
+  ratings      Rating[]      // Ratings submitted by user
+  comments     Comment[]     // Comments submitted by user
+  refreshTokens RefreshToken[]
+  instructorApplications InstructorApplication[]
 
   @@index([role])
+}
+
+model InstructorApplication {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  status    String   @default("Pending") // Pending, Approved, Rejected
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Category {
   id         Int       @id @default(autoincrement())
   name       String    @unique
-  courses    Course[]  // Courses in this category
+  courses    Course[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 }
@@ -39,8 +54,9 @@ model Course {
   instructor   User        @relation("InstructorCourses", fields: [instructorId], references: [id], onDelete: Cascade)
   categoryId   Int
   category     Category    @relation(fields: [categoryId], references: [id])
-  sessions     Session[]   // Course sessions
-  enrollments  Enrollment[] // Students enrolled
+  sessions     Session[]
+  enrollments  Enrollment[]
+  ratings      Rating[]    // Ratings for this course
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -53,9 +69,9 @@ model Session {
   courseId   Int
   course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
   title      String
-  youtubeUrl String?   // YouTube video link
-  content    Json?     // TipTap rich text (JSON)
-  progress   Progress[] // Student progress
+  youtubeUrl String?
+  content    Json?
+  progress   Progress[]
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
@@ -89,6 +105,39 @@ model Progress {
   @@unique([userId, sessionId])
   @@index([userId])
   @@index([sessionId])
+}
+
+model Rating {
+  id         Int       @id @default(autoincrement())
+  courseId   Int
+  userId     Int
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stars      Int       // 1-5
+  review     String?   // Optional text review
+  flagged    Boolean   @default(false) // For moderation
+  comments   Comment[] // Comments on this rating
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, courseId]) // One rating per user per course
+  @@index([courseId])
+  @@index([userId])
+}
+
+model Comment {
+  id         Int       @id @default(autoincrement())
+  ratingId   Int
+  userId     Int
+  rating     Rating    @relation(fields: [ratingId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    String    // Comment text
+  flagged    Boolean   @default(false) // For moderation
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([ratingId])
+  @@index([userId])
 }
 
 model RefreshToken {

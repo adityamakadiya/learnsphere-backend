@@ -24,4 +24,23 @@ const validateLogin = [
   },
 ];
 
-module.exports = { validateRegister, validateLogin };
+const validateRating = (req, res, next) => {
+  const { stars, review } = req.body;
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+    return res.status(400).json({ error: 'Stars must be an integer between 1 and 5' });
+  }
+  if (review && review.trim().length < 50) {
+    return res.status(400).json({ error: 'Review must be at least 50 characters' });
+  }
+  next();
+};
+
+const validateComment = (req, res, next) => {
+  const { content } = req.body;
+  if (!content || content.trim().length < 5) {
+    return res.status(400).json({ error: 'Comment must be at least 5 characters' });
+  }
+  next();
+};
+
+module.exports = { validateRegister, validateLogin, validateComment,validateRating };
