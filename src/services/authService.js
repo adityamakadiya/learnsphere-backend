@@ -1,8 +1,22 @@
+const { OAuth2Client } = require("google-auth-library");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
-const { jwtSecret, refreshTokenSecret } = require('../config/index');
-
+const { jwtSecret, refreshTokenSecret, GOOGLE_CLIENT_ID } = require('../config/index');
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+const generateTokens = (user) => {
+  const accessToken = jwt.sign(
+    { id: user.id, role: user.role, email: user.email },
+    jwtSecret,
+    { expiresIn: '20m' }
+  );
+  const refreshToken = jwt.sign(
+    { id: user.id },
+    refreshTokenSecret,
+    { expiresIn: '7d' }
+  );
+  return { accessToken, refreshToken };
+};
 const register = async ({ email, password, role }) => {
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
@@ -17,7 +31,6 @@ const register = async ({ email, password, role }) => {
   console.log('authService/register: Created user:', user.id); // Debug
   return { id: user.id, email: user.email, role: user.role };
 };
-
 const login = async ({ email, password }) => {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
@@ -31,17 +44,7 @@ const login = async ({ email, password }) => {
     error.status = 401;
     throw error;
   }
-
-  const accessToken = jwt.sign(
-    { id: user.id, role: user.role, email: user.email },
-    jwtSecret,
-    { expiresIn: '20m' }
-  );
-  const refreshToken = jwt.sign(
-    { id: user.id }, // Include userId
-    refreshTokenSecret,
-    { expiresIn: '7d' }
-  );
+  const { accessToken, refreshToken } = generateTokens(user);
   await prisma.refreshToken.create({
     data: {
       token: refreshToken,
@@ -56,7 +59,6 @@ const login = async ({ email, password }) => {
     user: { id: user.id, email: user.email, role: user.role },
   };
 };
-
 const refresh = async (refreshToken) => {
   const storedToken = await prisma.refreshToken.findUnique({
     where: { token: refreshToken },
@@ -82,25 +84,19 @@ const refresh = async (refreshToken) => {
     error.status = 401;
     throw error;
   }
-  const accessToken = jwt.sign(
-    { id: user.id, role: user.role, email: user.email },
-    jwtSecret,
-    { expiresIn: '20m' }
-  );
+  const { accessToken } = generateTokens(user);
   console.log('authService/refresh: Refreshed accessToken for user:', user.id); // Debug
   return {
     accessToken,
     user: { id: user.id, email: user.email, role: user.role },
   };
 };
-
 const logout = async (refreshToken) => {
   if (refreshToken) {
     await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
     console.log('authService/logout: Deleted refreshToken'); // Debug
   }
 };
-
 const getMe = async (userId) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -114,5 +110,54 @@ const getMe = async (userId) => {
   console.log('authService/getMe: Fetched user:', user.id); // Debug
   return user;
 };
-
-module.exports = { authService: { register, login, getMe, logout, refresh } };
+const googleLogin = async (idToken) => {
+  try {
+    console.log("authService/googleLogin: Verifying token"); // Debug
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const googleId = payload.sub;
+    const email = payload.email;
+    console.log("authService/googleLogin: Payload:", { googleId, email }); // Debug
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { email },
+          data: { googleId },
+        });
+        console.log("authService/googleLogin: Linked googleId to existing user:", user); // Debug
+      }
+    } else {
+      user = await prisma.user.create({
+        data: {
+          email,
+          googleId,
+          password: null,
+          role: "Student",
+        },
+      });
+      console.log("authService/googleLogin: Created user:", user); // Debug
+    }
+    const { accessToken, refreshToken } = generateTokens(user);
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+    console.log("authService/googleLogin: Generated tokens:", { accessToken, refreshToken }); // Debug
+    return {
+      user: { id: user.id, email: user.email, role: user.role },
+      accessToken,
+      refreshToken
+    };
+  } catch (error) {
+    console.error("authService/googleLogin: Error:", error.message); // Debug
+    throw new Error("Invalid Google token");
+  }
+};
+module.exports = { authService: { register, login, getMe, logout, refresh, googleLogin } };

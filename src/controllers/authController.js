@@ -81,4 +81,33 @@ const getMe = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getMe, refresh, logout };
+const googleLogin = async (req, res, next) => {
+  const { idToken } = req.body;
+  console.log('auth/googleLogin: Received idToken:', !!idToken);
+  if (!idToken) {
+    console.log('auth/googleLogin: No ID token provided');
+    return res.status(400).json({ error: 'No ID token provided' });
+  }
+  try {
+    const { accessToken, refreshToken, user } = await authService.googleLogin(idToken);
+    console.log('auth/googleLogin: Setting cookies for user:', user.id);
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 20 * 60 * 1000, // 20 minutes
+    });
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    res.json({ user });
+  } catch (err) {
+    console.error('auth/googleLogin: Error:', err.message, err.stack);
+    next(err);
+  }
+};
+
+module.exports = { register, login, getMe, refresh, logout, googleLogin };
