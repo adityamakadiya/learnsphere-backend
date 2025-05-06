@@ -59,38 +59,98 @@ const login = async ({ email, password }) => {
     user: { id: user.id, email: user.email, role: user.role },
   };
 };
+// const refresh = async (refreshToken) => {
+//   const storedToken = await prisma.refreshToken.findUnique({
+//     where: { token: refreshToken },
+//   });
+//   if (!storedToken || storedToken.expiresAt < new Date()) {
+//     const error = new Error('Invalid or expired refresh token');
+//     error.status = 401;
+//     throw error;
+//   }
+//   let decoded;
+//   try {
+//     decoded = jwt.verify(refreshToken, refreshTokenSecret);
+//   } catch (error) {
+//     const err = new Error('Invalid refresh token');
+//     err.status = 401;
+//     throw err;
+//   }
+//   const user = await prisma.user.findUnique({
+//     where: { id: storedToken.userId },
+//   });
+//   if (!user || user.id !== decoded.id) {
+//     const error = new Error('User not found or invalid token');
+//     error.status = 401;
+//     throw error;
+//   }
+//   const { accessToken } = generateTokens(user);
+//   console.log('authService/refresh: Refreshed accessToken for user:', user.id); // Debug
+//   return {
+//     accessToken,
+//     user: { id: user.id, email: user.email, role: user.role },
+//   };
+// };
+
 const refresh = async (refreshToken) => {
+  console.log("authService/refresh: Processing refresh token");
+
+  // Find stored refresh token
   const storedToken = await prisma.refreshToken.findUnique({
     where: { token: refreshToken },
   });
   if (!storedToken || storedToken.expiresAt < new Date()) {
-    const error = new Error('Invalid or expired refresh token');
+    if (storedToken) {
+      await prisma.refreshToken.delete({ where: { token: refreshToken } });
+    }
+    const error = new Error("Invalid or expired refresh token");
     error.status = 401;
     throw error;
   }
+
+  // Verify JWT
   let decoded;
   try {
     decoded = jwt.verify(refreshToken, refreshTokenSecret);
   } catch (error) {
-    const err = new Error('Invalid refresh token');
+    await prisma.refreshToken.delete({ where: { token: refreshToken } });
+    const err = new Error("Invalid refresh token");
     err.status = 401;
     throw err;
   }
+
+  // Find user
   const user = await prisma.user.findUnique({
     where: { id: storedToken.userId },
   });
   if (!user || user.id !== decoded.id) {
-    const error = new Error('User not found or invalid token');
+    await prisma.refreshToken.delete({ where: { token: refreshToken } });
+    const error = new Error("User not found or invalid token");
     error.status = 401;
     throw error;
   }
-  const { accessToken } = generateTokens(user);
-  console.log('authService/refresh: Refreshed accessToken for user:', user.id); // Debug
+
+  // Generate new tokens
+  const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
+
+  // Update refresh token in database
+  await prisma.refreshToken.delete({ where: { token: refreshToken } });
+  await prisma.refreshToken.create({
+    data: {
+      token: newRefreshToken,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    },
+  });
+
+  console.log("authService/refresh: Refreshed tokens for user:", user.id);
   return {
-    accessToken,
+    token: accessToken,
+    newRefreshToken,
     user: { id: user.id, email: user.email, role: user.role },
   };
 };
+
 const logout = async (refreshToken) => {
   if (refreshToken) {
     await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
