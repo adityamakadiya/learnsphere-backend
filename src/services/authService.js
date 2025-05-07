@@ -59,38 +59,6 @@ const login = async ({ email, password }) => {
     user: { id: user.id, email: user.email, role: user.role },
   };
 };
-// const refresh = async (refreshToken) => {
-//   const storedToken = await prisma.refreshToken.findUnique({
-//     where: { token: refreshToken },
-//   });
-//   if (!storedToken || storedToken.expiresAt < new Date()) {
-//     const error = new Error('Invalid or expired refresh token');
-//     error.status = 401;
-//     throw error;
-//   }
-//   let decoded;
-//   try {
-//     decoded = jwt.verify(refreshToken, refreshTokenSecret);
-//   } catch (error) {
-//     const err = new Error('Invalid refresh token');
-//     err.status = 401;
-//     throw err;
-//   }
-//   const user = await prisma.user.findUnique({
-//     where: { id: storedToken.userId },
-//   });
-//   if (!user || user.id !== decoded.id) {
-//     const error = new Error('User not found or invalid token');
-//     error.status = 401;
-//     throw error;
-//   }
-//   const { accessToken } = generateTokens(user);
-//   console.log('authService/refresh: Refreshed accessToken for user:', user.id); // Debug
-//   return {
-//     accessToken,
-//     user: { id: user.id, email: user.email, role: user.role },
-//   };
-// };
 
 const refresh = async (refreshToken) => {
   console.log("authService/refresh: Processing refresh token");
@@ -143,7 +111,7 @@ const refresh = async (refreshToken) => {
     },
   });
 
-  console.log("authService/refresh: Refreshed tokens for user:", user.id);
+  // console.log("authService/refresh: Refreshed tokens for user:", user.id);
   return {
     token: accessToken,
     newRefreshToken,
@@ -154,7 +122,7 @@ const refresh = async (refreshToken) => {
 const logout = async (refreshToken) => {
   if (refreshToken) {
     await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
-    console.log('authService/logout: Deleted refreshToken'); // Debug
+    // console.log('authService/logout: Deleted refreshToken'); // Debug
   }
 };
 const getMe = async (userId) => {
@@ -167,12 +135,12 @@ const getMe = async (userId) => {
     error.status = 404;
     throw error;
   }
-  console.log('authService/getMe: Fetched user:', user.id); // Debug
+  // console.log('authService/getMe: Fetched user:', user.id); // Debug
   return user;
 };
 const googleLogin = async (idToken) => {
   try {
-    console.log("authService/googleLogin: Verifying token"); // Debug
+    // console.log("authService/googleLogin: Verifying token"); // Debug
     const ticket = await client.verifyIdToken({
       idToken,
       audience: GOOGLE_CLIENT_ID,
@@ -180,7 +148,7 @@ const googleLogin = async (idToken) => {
     const payload = ticket.getPayload();
     const googleId = payload.sub;
     const email = payload.email;
-    console.log("authService/googleLogin: Payload:", { googleId, email }); // Debug
+    // console.log("authService/googleLogin: Payload:", { googleId, email }); // Debug
     let user = await prisma.user.findUnique({ where: { email } });
     if (user) {
       if (!user.googleId) {
@@ -188,7 +156,7 @@ const googleLogin = async (idToken) => {
           where: { email },
           data: { googleId },
         });
-        console.log("authService/googleLogin: Linked googleId to existing user:", user); // Debug
+        // console.log("authService/googleLogin: Linked googleId to existing user:", user); // Debug
       }
     } else {
       user = await prisma.user.create({
